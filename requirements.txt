@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+scikit-learn
+nltk==3.8.1
+spacy==3.8.13
+python-docx
+PyPDF2
+reportlab
+matplotlib
+joblib
+shap==0.48.0
