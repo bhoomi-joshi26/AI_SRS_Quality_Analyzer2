@@ -3,7 +3,7 @@ import re
 import joblib
 
 # ==========================================
-# MODEL PATH
+# PROJECT PATHS
 # ==========================================
 
 BASE_DIR = os.path.dirname(
@@ -34,14 +34,17 @@ vectorizer = None
 try:
 
     model = joblib.load(MODEL_PATH)
+
     vectorizer = joblib.load(VECTORIZER_PATH)
+
+    print("✅ Model Loaded Successfully")
 
 except Exception as e:
 
-    print("Model Loading Error :", e)
+    print("❌ Model Loading Error :", e)
 
 # ==========================================
-# IMPROVED AMBIGUOUS WORDS
+# CONFIGURATION
 # ==========================================
 
 AMBIGUOUS_WORDS = [
@@ -50,466 +53,309 @@ AMBIGUOUS_WORDS = [
     "quick",
     "easy",
     "simple",
-    "good",
     "better",
+    "good",
     "efficient",
     "proper",
     "user friendly",
-    "friendly",
-    "modern",
-    "advanced",
-    "robust",
-    "flexible",
-    "powerful",
-    "acceptable",
-    "adequate",
-    "optimal",
-    "best",
+    "soon",
     "many",
     "large",
     "high",
     "low",
-    "soon",
     "etc",
-    "and so on",
     "appropriate",
-    "sufficient"
+    "sufficient",
+    "minimal",
+    "maximum",
+    "optimum"
 
 ]
 
+FUNCTIONAL_KEYWORDS = [
+
+    "shall",
+    "allow",
+    "provide",
+    "generate",
+    "store",
+    "update",
+    "delete",
+    "insert",
+    "create",
+    "login",
+    "logout",
+    "authenticate",
+    "search",
+    "upload",
+    "download",
+    "process",
+    "track",
+    "manage"
+
+]
+
+NON_FUNCTIONAL_KEYWORDS = [
+
+    "performance",
+    "security",
+    "availability",
+    "reliability",
+    "response time",
+    "latency",
+    "encryption",
+    "aes",
+    "otp",
+    "authentication",
+    "password",
+    "access control",
+    "role based",
+    "multi factor"
+
+]
 # ==========================================
-# DETECT AMBIGUITY
+# AMBIGUITY DETECTION
 # ==========================================
 
 def detect_ambiguity(text):
 
-    text = text.lower()
-
     found = []
+
+    text = text.lower()
 
     for word in AMBIGUOUS_WORDS:
 
-        pattern = r"\b" + re.escape(word) + r"\b"
-
-        if re.search(pattern, text):
+        if re.search(r"\b" + re.escape(word) + r"\b", text):
 
             found.append(word)
 
     return sorted(list(set(found)))
+
+
+# ==========================================
+# EXTRACT REQUIREMENTS
+# ==========================================
+
+def extract_requirements(text):
+
+    # Remove extra blank lines
+
+    text = re.sub(r"\n\s*\n", "\n", text)
+
+    # Split using new line or sentence ending
+
+    parts = re.split(r"\n|(?<=[.!?])\s+", text)
+
+    requirements = []
+
+    for part in parts:
+
+        part = part.strip()
+
+        if len(part) < 15:
+
+            continue
+
+        requirements.append(part)
+
+    return requirements
+
+
 # ==========================================
 # REQUIREMENT STATISTICS
 # ==========================================
 
 def requirement_statistics(text):
 
-    # Split text into individual requirements
-    requirements = []
+    requirements = extract_requirements(text)
 
-    sentences = re.split(r"[.!?\n]+", text)
-
-    for sentence in sentences:
-
-        sentence = sentence.strip()
-
-        if len(sentence) > 10:
-
-            requirements.append(sentence)
-
-    total_requirements = len(requirements)
+    total = len(requirements)
 
     functional = 0
+
     non_functional = 0
-
-    # Functional requirement keywords
-    functional_keywords = [
-
-        "shall",
-        "allow",
-        "login",
-        "log in",
-        "register",
-        "generate",
-        "update",
-        "delete",
-        "insert",
-        "search",
-        "upload",
-        "download",
-        "process",
-        "store",
-        "create",
-        "manage",
-        "book",
-        "track",
-        "calculate",
-        "display"
-
-    ]
-
-    # Non-functional requirement keywords
-    nonfunctional_keywords = [
-
-        "performance",
-        "security",
-        "response time",
-        "availability",
-        "reliability",
-        "encryption",
-        "authentication",
-        "authorization",
-        "latency",
-        "backup",
-        "recovery",
-        "maintainability",
-        "scalability",
-        "confidentiality",
-        "integrity",
-        "usability",
-        "access control",
-        "aes",
-        "otp",
-        "multi factor",
-        "role based"
-
-    ]
 
     for req in requirements:
 
-        req = req.lower()
+        req_lower = req.lower()
 
-        # Functional Requirement
-        if any(keyword in req for keyword in functional_keywords):
+        if any(word in req_lower for word in FUNCTIONAL_KEYWORDS):
 
             functional += 1
 
-        # Non Functional Requirement
-        if any(keyword in req for keyword in nonfunctional_keywords):
+        if any(word in req_lower for word in NON_FUNCTIONAL_KEYWORDS):
 
             non_functional += 1
 
-    # Prevent impossible values
-    functional = min(functional, total_requirements)
-    non_functional = min(non_functional, total_requirements)
-
     return {
 
-        "total_requirements": total_requirements,
+        "total_requirements": total,
 
         "functional_requirements": functional,
 
-        "non_functional_requirements": non_functional
-
-    }
+        "non_functional_requirements
 # ==========================================
-# QUALITY SCORE CALCULATION
+# QUALITY SCORE
 # ==========================================
 
-def calculate_quality_score(text, prediction, confidence, ambiguity_count):
+def calculate_quality_score(
 
-    text = text.lower()
+        prediction,
 
-    score = 100
+        confidence,
 
-    # --------------------------------------
-    # Penalize Ambiguous Words
-    # --------------------------------------
+        ambiguity_count
 
-    score -= ambiguity_count * 5
+):
 
-    # --------------------------------------
-    # Mandatory Requirement Keyword
-    # --------------------------------------
-
-    if "shall" not in text:
-        score -= 10
-
-    # --------------------------------------
-    # Measurable Values
-    # --------------------------------------
-
-    measurable_patterns = [
-
-        r"\d+\s*second",
-        r"\d+\s*seconds",
-        r"\d+\s*minute",
-        r"\d+\s*minutes",
-        r"\d+\s*ms",
-        r"\d+\s*%",
-        r"\d+\s*mb",
-        r"\d+\s*gb"
-
-    ]
-
-    measurable_found = False
-
-    for pattern in measurable_patterns:
-
-        if re.search(pattern, text):
-
-            measurable_found = True
-            break
-
-    if not measurable_found:
-        score -= 10
-
-    # --------------------------------------
-    # Actor Detection
-    # --------------------------------------
-
-    actors = [
-
-        "user",
-        "customer",
-        "administrator",
-        "employee",
-        "system operator",
-        "registered user"
-
-    ]
-
-    if not any(actor in text for actor in actors):
-
-        score -= 5
-
-    # --------------------------------------
-    # Action Detection
-    # --------------------------------------
-
-    actions = [
-
-        "login",
-        "log in",
-        "upload",
-        "download",
-        "search",
-        "generate",
-        "update",
-        "delete",
-        "store",
-        "process",
-        "manage",
-        "track",
-        "create"
-
-    ]
-
-    if not any(action in text for action in actions):
-
-        score -= 5
-
-    # --------------------------------------
-    # Security Requirement
-    # --------------------------------------
-
-    security_keywords = [
-
-        "aes",
-        "encryption",
-        "encrypted",
-        "otp",
-        "authentication",
-        "authorization",
-        "role based",
-        "access control",
-        "password",
-        "secure"
-
-    ]
-
-    if any(word in text for word in security_keywords):
-
-        score += 5
-
-    # --------------------------------------
-    # Performance Requirement
-    # --------------------------------------
-
-    performance_keywords = [
-
-        "response time",
-        "within",
-        "performance"
-
-    ]
-
-    if any(word in text for word in performance_keywords):
-
-        score += 5
-
-    # --------------------------------------
-    # ML Confidence Adjustment
-    # --------------------------------------
+    score = confidence
 
     if prediction == "High":
 
-        score += (confidence * 0.05)
+        score += 10
 
     else:
 
-        score -= (100 - confidence) * 0.05
+        score -= 10
 
-    # --------------------------------------
-    # Limit Score
-    # --------------------------------------
+    # Reduce score for ambiguous words
+
+    score -= ambiguity_count * 5
 
     score = max(0, min(score, 100))
 
     return round(score, 2)
+
+
 # ==========================================
-# MAIN SRS ANALYZER
+# MAIN ANALYZER
 # ==========================================
 
-def analyze_srs(text):
+def analyze_srs(processed_text, original_text):
 
     if model is None or vectorizer is None:
 
         return {
-            "error": "Model not available"
+
+            "prediction": "Unknown",
+
+            "confidence": 0,
+
+            "quality_score": 0,
+
+            "message": "Model not loaded.",
+
+            "ambiguous_words": [],
+
+            "statistics": {},
+
+            "suggestions": []
+
         }
 
-    # --------------------------------------
-    # Convert Text into TF-IDF Features
-    # --------------------------------------
+    # ------------------------------
+    # ML Prediction
+    # ------------------------------
 
-    vector = vectorizer.transform([text])
+    vector = vectorizer.transform([processed_text])
 
     prediction = model.predict(vector)[0]
 
-    # --------------------------------------
-    # Confidence Score
-    # --------------------------------------
+    probability = model.predict_proba(vector)[0]
 
-    if hasattr(model, "predict_proba"):
+    confidence = round(max(probability) * 100, 2)
 
-        probability = model.predict_proba(vector)[0]
-        confidence = round(max(probability) * 100, 2)
+    # ------------------------------
+    # Original Text Analysis
+    # ------------------------------
 
-    else:
+    ambiguity = detect_ambiguity(original_text)
 
-        confidence = 85.00
-
-    # --------------------------------------
-    # Ambiguity Detection
-    # --------------------------------------
-
-    ambiguity = detect_ambiguity(text)
-
-    # --------------------------------------
-    # Requirement Statistics
-    # --------------------------------------
-
-    statistics = requirement_statistics(text)
-
-    # --------------------------------------
-    # Quality Score
-    # --------------------------------------
+    statistics = requirement_statistics(original_text)
 
     quality_score = calculate_quality_score(
-        text,
+
         prediction,
+
         confidence,
+
         len(ambiguity)
+
     )
 
-    # --------------------------------------
-    # Dynamic Assessment Message
-    # --------------------------------------
+    # Suggestions and message
+    # ------------------------------
+    # Suggestions & Message
+    # ------------------------------
 
-    if quality_score >= 85:
+    suggestions = []
 
-        message = (
-            "Excellent SRS. Requirements are clear, "
-            "measurable and well structured."
-        )
-
-    elif quality_score >= 70:
+    if prediction == "High":
 
         message = (
-            "Good SRS with minor improvements required."
-        )
-
-    elif quality_score >= 50:
-
-        message = (
-            "Average SRS. Several requirements need "
-            "clarification."
+            "The SRS contains clear, measurable and "
+            "well-structured requirements."
         )
 
     else:
 
         message = (
-            "Poor SRS. Requirements contain ambiguity "
-            "and should be rewritten."
+            "The SRS contains ambiguous or "
+            "poorly specified requirements."
         )
 
-    # --------------------------------------
-    # Improvement Suggestions
-    # --------------------------------------
-
-    suggestions = []
+    # Ambiguity Suggestions
 
     if ambiguity:
 
         suggestions.append(
-            "Replace ambiguous words with measurable terms."
+            "Remove ambiguous words such as: "
+            + ", ".join(ambiguity)
         )
 
-    if "shall" not in text.lower():
+    # Functional Requirement Check
+
+    if statistics["functional_requirements"] == 0:
+
+        suggestions.append(
+            "Add functional requirements using keywords like 'shall', 'allow', 'process' or 'store'."
+        )
+
+    # Non-Functional Requirement Check
+
+    if statistics["non_functional_requirements"] == 0:
+
+        suggestions.append(
+            "Include measurable non-functional requirements such as security, performance, reliability or response time."
+        )
+
+    # Measurable Requirement Check
+
+    if not re.search(r"\b\d+\s*(second|seconds|ms|minute|minutes)\b", original_text.lower()):
+
+        suggestions.append(
+            "Specify measurable values such as response time, storage limit or performance constraints."
+        )
+
+    # Mandatory Keyword Check
+
+    if "shall" not in original_text.lower():
 
         suggestions.append(
             "Use 'shall' instead of 'should' for mandatory requirements."
         )
 
-    if not re.search(
-        r"\d+\s*(second|seconds|minute|minutes|ms|%)",
-        text.lower()
-    ):
-
-        suggestions.append(
-            "Add measurable values such as response time or limits."
-        )
-
-    security_keywords = [
-        "authentication",
-        "authorization",
-        "password",
-        "otp",
-        "aes",
-        "secure",
-        "access control",
-        "encryption"
-    ]
-
-    if not any(word in text.lower() for word in security_keywords):
-
-        suggestions.append(
-            "Specify security requirements where applicable."
-        )
-
-    actors = [
-        "user",
-        "customer",
-        "administrator",
-        "employee",
-        "system operator",
-        "registered user"
-    ]
-
-    if not any(actor in text.lower() for actor in actors):
-
-        suggestions.append(
-            "Clearly identify the actor performing the action."
-        )
+    # No Suggestions
 
     if len(suggestions) == 0:
 
         suggestions.append(
-            "Your SRS follows good software engineering practices."
+            "Excellent SRS. No major improvements required."
         )
 
-    # --------------------------------------
-    # Return Results
-    # --------------------------------------
+    # ------------------------------
+    # Return Result
+    # ------------------------------
 
     return {
 
@@ -525,6 +371,4 @@ def analyze_srs(text):
 
         "statistics": statistics,
 
-        "suggestions": suggestions
-
-    }
+        "suggestions
