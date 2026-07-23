@@ -486,5 +486,10 @@ st.markdown(
     <b>Developed By</b><br>
 
     Bhoomi Joshi (24CA1054)<br>
+    Jhanvi Pangam (24CA1053)<br>
+    Aaiman Khan (24CA1061)
 
-    Jhanvi Pangam (24CA1053)<br
+    </center>
+    """,
+    unsafe_allow_html=True
+)
