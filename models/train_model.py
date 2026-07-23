@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC
 
 from sklearn.metrics import (
     accuracy_score,
@@ -137,15 +137,13 @@ print("\nConverting Text into Numerical Features...")
 
 
 vectorizer = TfidfVectorizer(
-
     lowercase=True,
-
     stop_words="english",
-
-    max_features=5000,
-
-    ngram_range=(1,2)
-
+    max_features=10000,
+    ngram_range=(1,2),
+    sublinear_tf=True,
+    min_df=2,
+    max_df=0.95
 )
 
 
@@ -175,16 +173,9 @@ print(
 print("\nTraining Random Forest Model...")
 
 
-model = RandomForestClassifier(
-
-    n_estimators=200,
-
-    max_depth=20,
-
-    random_state=42,
-
-    class_weight="balanced"
-
+model = LinearSVC(
+    class_weight="balanced",
+    random_state=42
 )
 
 
