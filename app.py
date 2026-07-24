@@ -8,7 +8,6 @@ from analyzer.quality_checker import analyze_srs
 from analyzer.explain_ai import explain_prediction
 from analyzer.report_generator import generate_pdf_report
 
-
 # ==========================================
 # PAGE CONFIGURATION
 # ==========================================
@@ -18,7 +17,6 @@ st.set_page_config(
     page_icon="📄",
     layout="wide"
 )
-
 
 # ==========================================
 # SIDEBAR
@@ -77,7 +75,6 @@ st.sidebar.markdown("""
 
 **AAIMAN KHAN (24CA1061)**
 """)
-
 
 # ==========================================
 # MAIN TITLE
@@ -167,7 +164,7 @@ if uploaded_file is not None:
 
                 # Explainable AI
 
-                explanation = explain_prediction(processed_text)
+explanation = explain_prediction(srs_text)
 
                 # Store Results
 
