@@ -1,10 +1,11 @@
 import os
 import re
 import joblib
+import numpy as np
 
-# =====================================
-# LOAD MODEL
-# =====================================
+# =====================================================
+# PROJECT PATHS
+# =====================================================
 
 BASE_DIR = os.path.dirname(
     os.path.dirname(
@@ -24,100 +25,68 @@ VECTORIZER_PATH = os.path.join(
     "vectorizer.pkl"
 )
 
-model = joblib.load(MODEL_PATH)
-vectorizer = joblib.load(VECTORIZER_PATH)
+# =====================================================
+# LOAD MODEL
+# =====================================================
 
-# =====================================
-# KEYWORD LISTS
-# =====================================
+model = joblib.load(MODEL_PATH)
+
+vectorizer = joblib.load(VECTORIZER_PATH)
+# =====================================================
+# CONFIGURATION
+# =====================================================
+
+AMBIGUOUS_WORDS = [
+
+    "fast",
+    "quick",
+    "easy",
+    "simple",
+    "good",
+    "better",
+    "efficient",
+    "proper",
+    "many",
+    "large",
+    "soon",
+    "etc",
+    "appropriate",
+    "sufficient",
+    "user friendly"
+
+]
 
 POSITIVE_KEYWORDS = [
 
     "shall",
     "authentication",
     "security",
-    "encryption",
-    "aes",
-    "otp",
-    "password",
-    "role",
-    "access control",
     "performance",
-    "response time",
-    "reliability",
-    "availability",
+    "encryption",
+    "password",
+    "otp",
+    "access",
+    "login",
+    "logout",
+    "search",
+    "upload",
+    "download",
     "store",
     "process",
     "generate",
-    "upload",
-    "download",
-    "login",
-    "logout",
-    "database"
+    "manage",
+    "response",
+    "reliability",
+    "availability"
 
 ]
 
-NEGATIVE_KEYWORDS = [
 
-    "fast",
-    "easy",
-    "good",
-    "better",
-    "simple",
-    "efficient",
-    "proper",
-    "advanced",
-    "many",
-    "large",
-    "soon",
-    "etc",
-    "appropriate",
-    "sufficient"
-
-]
-# =====================================
-# FIND POSITIVE INDICATORS
-# =====================================
-
-def get_positive_features(text):
-
-    text = text.lower()
-
-    positive = []
-
-    for word in POSITIVE_KEYWORDS:
-
-        if re.search(r"\b" + re.escape(word) + r"\b", text):
-
-            positive.append(word)
-
-    return sorted(list(set(positive)))
-
-
-# =====================================
-# FIND NEGATIVE INDICATORS
-# =====================================
-
-def get_negative_features(text):
-
-    text = text.lower()
-
-    negative = []
-
-    for word in NEGATIVE_KEYWORDS:
-
-        if re.search(r"\b" + re.escape(word) + r"\b", text):
-
-            negative.append(word)
-
-    return sorted(list(set(negative)))
-# =====================================
+# =====================================================
 # EXPLAIN PREDICTION
-# =====================================
+# =====================================================
 
 def explain_prediction(text):
-
-    # ML Prediction
 
     vector = vectorizer.transform([text])
 
@@ -127,52 +96,109 @@ def explain_prediction(text):
 
     confidence = round(max(probability) * 100, 2)
 
-    # Detect Indicators
+    feature_names = np.array(
+        vectorizer.get_feature_names_out()
+    )
 
-    positive_features = get_positive_features(text)
+    values = vector.toarray()[0]
 
-    negative_features = get_negative_features(text)
+    indices = np.argsort(values)[::-1]
 
-    # Explanation Message
+    important_words = []
+
+    for index in indices:
+
+        if values[index] <= 0:
+            continue
+
+        important_words.append(
+            feature_names[index]
+        )
+
+        if len(important_words) == 15:
+            break
+                # =====================================================
+    # POSITIVE INDICATORS
+    # =====================================================
+
+    positive_features = []
+
+    for word in important_words:
+
+        if word.lower() in POSITIVE_KEYWORDS:
+
+            positive_features.append(word)
+
+    # =====================================================
+    # NEGATIVE INDICATORS
+    # =====================================================
+
+    negative_features = []
+
+    text_lower = text.lower()
+
+    for word in AMBIGUOUS_WORDS:
+
+        if re.search(r"\b" + re.escape(word) + r"\b", text_lower):
+
+            negative_features.append(word)
+
+    # If no positive keywords were found,
+    # show the most important TF-IDF words
+
+    if len(positive_features) == 0:
+
+        positive_features = important_words[:5]
+
+    # Remove duplicate entries
+
+    positive_features = list(dict.fromkeys(positive_features))
+
+    negative_features = list(dict.fromkeys(negative_features))
+        # =====================================================
+    # EXPLANATION MESSAGE
+    # =====================================================
 
     if prediction == "High":
 
         explanation = (
-            "The SRS is classified as High Quality because it contains "
-            "clear, measurable and well-structured requirement statements."
+            "The uploaded SRS is classified as High Quality because "
+            "it contains clear, structured and measurable requirement "
+            "statements with appropriate software engineering terminology."
         )
 
     else:
 
         explanation = (
-            "The SRS is classified as Low Quality because it contains "
-            "ambiguous, incomplete or non-measurable requirements."
+            "The uploaded SRS is classified as Low Quality because "
+            "it contains ambiguous, incomplete or poorly specified "
+            "requirements that may lead to software defects."
         )
-    # ---------------------------------
-    # Default Messages
-    # ---------------------------------
 
-    if len(positive_features) == 0:
-
-        positive_features.append(
-            "No strong SRS quality indicators found."
-        )
+    # If there are no negative indicators, don't invent any
 
     if len(negative_features) == 0:
 
-        negative_features.append(
-            "No ambiguous words detected."
-        )
+        negative_features = []
 
-    # ---------------------------------
-    # Return Result
-    # ---------------------------------
+    # If there are no positive indicators, show the most
+    # important keywords extracted by TF-IDF
+
+    if len(positive_features) == 0:
+
+        positive_features = important_words[:5]
+
+    # =====================================================
+    # RETURN RESULT
+    # =====================================================
 
     return {
 
         "prediction": prediction,
 
         "confidence": confidence,
+
+        "important_keywords": important_words,
 
         "positive_features": positive_features,
 
@@ -181,3 +207,4 @@ def explain_prediction(text):
         "explanation": explanation
 
     }
+            
