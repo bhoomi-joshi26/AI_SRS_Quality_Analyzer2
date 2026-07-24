@@ -1,122 +1,78 @@
 import os
 
-from reportlab.lib.pagesizes import letter
-
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer
-)
-
 from reportlab.lib.styles import getSampleStyleSheet
 
+from reportlab.platypus import (
 
+    SimpleDocTemplate,
 
+    Paragraph,
 
-# =========================================
-# REPORT FOLDER
-# =========================================
+    Spacer
 
-BASE_DIR = os.path.dirname(
-    os.path.dirname(
-        os.path.abspath(__file__)
-    )
 )
-
-
-REPORT_FOLDER = os.path.join(
-    BASE_DIR,
-    "reports"
-)
-
-
-
-if not os.path.exists(REPORT_FOLDER):
-
-    os.makedirs(
-        REPORT_FOLDER
-    )
-
-
-
-
-
-# =========================================
-# PDF GENERATOR FUNCTION
-# =========================================
+# =====================================================
+# PDF REPORT
+# =====================================================
 
 def generate_pdf_report(
-        analysis_result,
-        file_name="SRS_Report.pdf"
+
+        result,
+
+        output_path
+
 ):
 
+    doc = SimpleDocTemplate(
 
-    report_path = os.path.join(
-
-        REPORT_FOLDER,
-
-        file_name
+        output_path
 
     )
-
-
-
-    document = SimpleDocTemplate(
-
-        report_path,
-
-        pagesize=letter
-
-    )
-
-
 
     styles = getSampleStyleSheet()
 
+    story = []
 
-    content = []
+    # ----------------------------------------
 
-
-
-    # -------------------------------
-    # Title
-    # -------------------------------
-
-    title = Paragraph(
-
-        "<b>AI-Based Software Requirement "
-        "Specification (SRS) Quality Analyzer</b>",
-
-        styles["Title"]
-
-    )
-
-
-    content.append(title)
-
-    content.append(
-        Spacer(1,20)
-    )
-
-
-
-
-
-    # -------------------------------
-    # Prediction Details
-    # -------------------------------
-
-
-    content.append(
+    story.append(
 
         Paragraph(
 
-            "<b>Prediction:</b> "
-            + str(
-                analysis_result.get(
-                    "prediction"
-                )
-            ),
+            "<b>SRSentinel AI</b>",
+
+            styles["Title"]
+
+        )
+
+    )
+
+    story.append(
+
+        Paragraph(
+
+            "Software Requirement Specification Analysis Report",
+
+            styles["Heading2"]
+
+        )
+
+    )
+
+    story.append(
+
+        Spacer(1, 20)
+
+    )
+        # ========================================
+
+    story.append(
+
+        Paragraph(
+
+            "<b>Prediction :</b> " +
+
+            str(result.get("prediction", "N/A")),
 
             styles["Normal"]
 
@@ -124,18 +80,14 @@ def generate_pdf_report(
 
     )
 
-
-
-    content.append(
+    story.append(
 
         Paragraph(
 
-            "<b>Confidence:</b> "
-            + str(
-                analysis_result.get(
-                    "confidence"
-                )
-            )
+            "<b>Confidence :</b> "
+
+            + str(result.get("confidence", 0))
+
             + "%",
 
             styles["Normal"]
@@ -144,18 +96,14 @@ def generate_pdf_report(
 
     )
 
-
-
-    content.append(
+    story.append(
 
         Paragraph(
 
-            "<b>Quality Score:</b> "
-            + str(
-                analysis_result.get(
-                    "quality_score"
-                )
-            )
+            "<b>Quality Score :</b> "
+
+            + str(result.get("quality_score", 0))
+
             + "/100",
 
             styles["Normal"]
@@ -164,21 +112,32 @@ def generate_pdf_report(
 
     )
 
+    story.append(
 
+        Paragraph(
 
-    content.append(
-        Spacer(1,15)
+            "<b>Assessment :</b> "
+
+            + result.get("message", ""),
+
+            styles["Normal"]
+
+        )
+
     )
 
+    story.append(
 
+        Spacer(1, 15)
 
+    )
+        # ========================================
+    # Requirement Statistics
+    # ========================================
 
-    # -------------------------------
-    # Statistics
-    # -------------------------------
+    statistics = result.get("statistics", {})
 
-
-    content.append(
+    story.append(
 
         Paragraph(
 
@@ -190,144 +149,13 @@ def generate_pdf_report(
 
     )
 
-
-
-    statistics = analysis_result.get(
-        "statistics",
-        {}
-    )
-
-
-    for key,value in statistics.items():
-
-
-        content.append(
-
-            Paragraph(
-
-                f"{key}: {value}",
-
-                styles["Normal"]
-
-            )
-
-        )
-
-
-
-
-    content.append(
-        Spacer(1,15)
-    )
-
-
-
-
-    # -------------------------------
-    # Ambiguity Detection
-    # -------------------------------
-
-
-    content.append(
+    story.append(
 
         Paragraph(
 
-            "<b>Ambiguous Words Detected</b>",
+            "Total Requirements : "
 
-            styles["Heading2"]
-
-        )
-
-    )
-
-
-
-    ambiguous = analysis_result.get(
-
-        "ambiguous_words",
-
-        []
-
-    )
-
-
-
-    if ambiguous:
-
-
-        content.append(
-
-            Paragraph(
-
-                ", ".join(ambiguous),
-
-                styles["Normal"]
-
-            )
-
-        )
-
-
-    else:
-
-
-        content.append(
-
-            Paragraph(
-
-                "No ambiguous words detected",
-
-                styles["Normal"]
-
-            )
-
-        )
-
-
-
-
-
-    content.append(
-        Spacer(1,15)
-    )
-
-
-
-
-
-    # -------------------------------
-    # Explanation
-    # -------------------------------
-
-
-    content.append(
-
-        Paragraph(
-
-            "<b>AI Explanation</b>",
-
-            styles["Heading2"]
-
-        )
-
-    )
-
-
-
-    content.append(
-
-        Paragraph(
-
-            analysis_result.get(
-
-                "message",
-
-                analysis_result.get(
-                    "explanation",
-                    ""
-                )
-
-            ),
+            + str(statistics.get("total_requirements", 0)),
 
             styles["Normal"]
 
@@ -335,24 +163,101 @@ def generate_pdf_report(
 
     )
 
+    story.append(
 
+        Paragraph(
 
+            "Functional Requirements : "
 
+            + str(statistics.get("functional_requirements", 0)),
 
-    content.append(
-        Spacer(1,15)
+            styles["Normal"]
+
+        )
+
     )
 
+    story.append(
 
+        Paragraph(
 
+            "Non-Functional Requirements : "
 
+            + str(statistics.get("non_functional_requirements", 0)),
 
-    # -------------------------------
+            styles["Normal"]
+
+        )
+
+    )
+
+    story.append(
+
+        Spacer(1, 15)
+
+    )
+        # ========================================
+    # Ambiguous Words
+    # ========================================
+
+    story.append(
+
+        Paragraph(
+
+            "<b>Ambiguous Words</b>",
+
+            styles["Heading2"]
+
+        )
+
+    )
+
+    ambiguity = result.get(
+
+        "ambiguous_words",
+
+        []
+
+    )
+
+    if ambiguity:
+
+        story.append(
+
+            Paragraph(
+
+                ", ".join(ambiguity),
+
+                styles["Normal"]
+
+            )
+
+        )
+
+    else:
+
+        story.append(
+
+            Paragraph(
+
+                "No ambiguous words detected.",
+
+                styles["Normal"]
+
+            )
+
+        )
+
+    story.append(
+
+        Spacer(1, 15)
+
+    )
+        # ========================================
     # Suggestions
-    # -------------------------------
+    # ========================================
 
-
-    content.append(
+    story.append(
 
         Paragraph(
 
@@ -364,9 +269,7 @@ def generate_pdf_report(
 
     )
 
-
-
-    suggestions = analysis_result.get(
+    suggestions = result.get(
 
         "suggestions",
 
@@ -374,19 +277,15 @@ def generate_pdf_report(
 
     )
 
-
-
     if suggestions:
 
+        for suggestion in suggestions:
 
-        for item in suggestions:
-
-
-            content.append(
+            story.append(
 
                 Paragraph(
 
-                    "• " + item,
+                    "• " + suggestion,
 
                     styles["Normal"]
 
@@ -394,15 +293,13 @@ def generate_pdf_report(
 
             )
 
-
     else:
 
-
-        content.append(
+        story.append(
 
             Paragraph(
 
-                "No major improvements required.",
+                "No improvements required.",
 
                 styles["Normal"]
 
@@ -410,15 +307,8 @@ def generate_pdf_report(
 
         )
 
+    # ========================================
 
+    doc.build(story)
 
-
-
-    # Build PDF
-
-    document.build(
-        content
-    )
-
-
-    return report_path
+    return output_path
