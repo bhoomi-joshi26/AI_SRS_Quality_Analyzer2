@@ -155,21 +155,17 @@ if uploaded_file is not None:
 
                 st.session_state["processed_text"] = processed_text
 
-                # AI Analysis
-
+                                # AI Analysis
                 analysis_result = analyze_srs(
-    processed_text,
-    srs_text
-)
+                    processed_text,
+                    srs_text
+                )
 
                 # Explainable AI
-
-explanation = explain_prediction(srs_text)
+                explanation = explain_prediction(srs_text)
 
                 # Store Results
-
                 st.session_state["analysis_result"] = analysis_result
-
                 st.session_state["explanation"] = explanation
 
             st.success("✅ Analysis completed successfully!")
