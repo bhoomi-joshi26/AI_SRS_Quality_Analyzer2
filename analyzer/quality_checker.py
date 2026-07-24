@@ -2,9 +2,10 @@ import os
 import re
 import joblib
 
-# ==========================================
+
+# =====================================================
 # PROJECT PATHS
-# ==========================================
+# =====================================================
 
 BASE_DIR = os.path.dirname(
     os.path.dirname(
@@ -24,9 +25,10 @@ VECTORIZER_PATH = os.path.join(
     "vectorizer.pkl"
 )
 
-# ==========================================
+
+# =====================================================
 # LOAD MODEL
-# ==========================================
+# =====================================================
 
 model = None
 vectorizer = None
@@ -43,9 +45,10 @@ except Exception as e:
 
     print("❌ Model Loading Error:", e)
 
-# ==========================================
+
+# =====================================================
 # CONFIGURATION
-# ==========================================
+# =====================================================
 
 AMBIGUOUS_WORDS = [
 
@@ -67,6 +70,7 @@ AMBIGUOUS_WORDS = [
 
 ]
 
+
 FUNCTIONAL_KEYWORDS = [
 
     "shall",
@@ -86,12 +90,10 @@ FUNCTIONAL_KEYWORDS = [
     "generate",
     "manage",
     "view",
-    "edit",
-    "authenticate",
-    "verify",
-    "notify"
+    "edit"
 
 ]
+
 
 NON_FUNCTIONAL_KEYWORDS = [
 
@@ -106,23 +108,17 @@ NON_FUNCTIONAL_KEYWORDS = [
     "latency",
     "aes",
     "encryption",
-    "encrypted",
     "otp",
     "password",
     "authentication",
     "access control",
     "backup",
-    "recovery",
-    "seconds",
-    "second",
-    "ms",
-    "database",
-    "secure"
+    "recovery"
 
 ]
-# ==========================================
+# =====================================================
 # AMBIGUITY DETECTION
-# ==========================================
+# =====================================================
 
 def detect_ambiguity(text):
 
@@ -139,29 +135,30 @@ def detect_ambiguity(text):
     return sorted(list(set(found)))
 
 
-# ==========================================
-# EXTRACT REQUIREMENTS
-# ==========================================
+# =====================================================
+# REQUIREMENT EXTRACTION
+# =====================================================
+
+REQUIREMENT_WORDS = [
+
+    "shall",
+    "should",
+    "must",
+    "will",
+    "may"
+
+]
+
 
 def extract_requirements(text):
 
     text = text.replace("\r", "\n")
 
+    lines = text.split("\n")
+
     requirements = []
 
-    REQUIREMENT_WORDS = [
-
-        "shall",
-        "should",
-        "must",
-        "will",
-        "allow",
-        "provide",
-        "system"
-
-    ]
-
-    for line in text.split("\n"):
+    for line in lines:
 
         line = line.strip()
 
@@ -178,9 +175,9 @@ def extract_requirements(text):
     return requirements
 
 
-# ==========================================
+# =====================================================
 # REQUIREMENT STATISTICS
-# ==========================================
+# =====================================================
 
 def requirement_statistics(text):
 
@@ -197,15 +194,15 @@ def requirement_statistics(text):
         req_lower = req.lower()
 
         if any(
-            re.search(r"\b" + re.escape(word) + r"\b", req_lower)
-            for word in FUNCTIONAL_KEYWORDS
+            keyword in req_lower
+            for keyword in FUNCTIONAL_KEYWORDS
         ):
 
             functional += 1
 
         if any(
-            re.search(r"\b" + re.escape(word) + r"\b", req_lower)
-            for word in NON_FUNCTIONAL_KEYWORDS
+            keyword in req_lower
+            for keyword in NON_FUNCTIONAL_KEYWORDS
         ):
 
             non_functional += 1
@@ -219,9 +216,9 @@ def requirement_statistics(text):
         "non_functional_requirements": non_functional
 
     }
-# ==========================================
+    # =====================================================
 # QUALITY SCORE
-# ==========================================
+# =====================================================
 
 def calculate_quality_score(
 
@@ -243,7 +240,8 @@ def calculate_quality_score(
 
         score -= 10
 
-    # Deduct marks for ambiguous words
+    # Reduce score for ambiguous words
+
     score -= ambiguity_count * 5
 
     score = max(0, min(score, 100))
@@ -251,9 +249,9 @@ def calculate_quality_score(
     return round(score, 2)
 
 
-# ==========================================
+# =====================================================
 # MAIN ANALYZER
-# ==========================================
+# =====================================================
 
 def analyze_srs(processed_text, original_text):
 
@@ -277,25 +275,51 @@ def analyze_srs(processed_text, original_text):
 
         }
 
-    # ------------------------------
-    # ML Prediction
-    # ------------------------------
+    # -----------------------------------------
+    # Machine Learning Prediction
+    # -----------------------------------------
 
-    vector = vectorizer.transform([processed_text])
+    vector = vectorizer.transform(
 
-    prediction = model.predict(vector)[0]
+        [processed_text]
 
-    probability = model.predict_proba(vector)[0]
+    )
 
-    confidence = round(max(probability) * 100, 2)
+    prediction = model.predict(
 
-    # ------------------------------
-    # Rule-Based Analysis
-    # ------------------------------
+        vector
 
-    ambiguity = detect_ambiguity(original_text)
+    )[0]
 
-    statistics = requirement_statistics(original_text.strip())
+    probability = model.predict_proba(
+
+        vector
+
+    )[0]
+
+    confidence = round(
+
+        max(probability) * 100,
+
+        2
+
+    )
+
+    # -----------------------------------------
+    # Analyze Original SRS
+    # -----------------------------------------
+
+    ambiguity = detect_ambiguity(
+
+        original_text
+
+    )
+
+    statistics = requirement_statistics(
+
+        original_text
+
+    )
 
     quality_score = calculate_quality_score(
 
@@ -307,9 +331,7 @@ def analyze_srs(processed_text, original_text):
 
     )
 
-    # ------------------------------
-    # Message
-    # ------------------------------
+    suggestions = []
 
     if prediction == "High":
 
@@ -324,120 +346,56 @@ def analyze_srs(processed_text, original_text):
             "The SRS contains ambiguous or "
             "poorly specified requirements."
         )
-
-    suggestions = []# ==========================================
-# MAIN ANALYZER
-# ==========================================
-
-def analyze_srs(processed_text, original_text):
-
-    if model is None or vectorizer is None:
-
-        return {
-
-            "prediction": "Unknown",
-            "confidence": 0,
-            "quality_score": 0,
-            "message": "Model not loaded.",
-            "ambiguous_words": [],
-            "statistics": {},
-            "suggestions": []
-
-        }
-
-    # -----------------------------
-    # Machine Learning Prediction
-    # -----------------------------
-
-    vector = vectorizer.transform([processed_text])
-
-    prediction = model.predict(vector)[0]
-
-    probability = model.predict_proba(vector)[0]
-
-    confidence = round(max(probability) * 100, 2)
-
-    # -----------------------------
-    # Rule-based Analysis
-    # -----------------------------
-
-    ambiguity = detect_ambiguity(original_text)
-
-    statistics = requirement_statistics(original_text)
-
-    quality_score = calculate_quality_score(
-        prediction,
-        confidence,
-        len(ambiguity)
-    )
-
-    # -----------------------------
-    # Message
-    # -----------------------------
-
-    if prediction == "High":
-
-        message = (
-            "The uploaded SRS is well structured and "
-            "contains clear, measurable requirements."
-        )
-
-    else:
-
-        message = (
-            "The uploaded SRS contains vague or "
-            "incomplete requirements."
-        )
-
-    # -----------------------------
-    # Suggestions
-    # -----------------------------
-
-    suggestions = []
+            # -----------------------------------------
+    # Improvement Suggestions
+    # -----------------------------------------
 
     if ambiguity:
 
         suggestions.append(
-            "Remove ambiguous words: "
+            "Remove ambiguous words such as: "
             + ", ".join(ambiguity)
         )
 
     if statistics["functional_requirements"] == 0:
 
         suggestions.append(
-            "Add functional requirements using words like 'shall', 'login', 'process', 'store' etc."
+            "Add functional requirements using keywords like 'shall', 'allow', 'process', 'store' or 'generate'."
         )
 
     if statistics["non_functional_requirements"] == 0:
 
         suggestions.append(
-            "Include measurable non-functional requirements such as performance, security, reliability and response time."
+            "Include measurable non-functional requirements such as security, performance, reliability and response time."
         )
 
     if not re.search(
-        r"\b\d+\s*(second|seconds|ms|minute|minutes)\b",
+
+        r"\b\d+\s*(ms|millisecond|milliseconds|second|seconds|minute|minutes|hour|hours)\b",
+
         original_text.lower()
+
     ):
 
         suggestions.append(
-            "Specify measurable constraints (example: response time within 2 seconds)."
+            "Specify measurable values such as response time, storage capacity or performance limits."
         )
 
     if "shall" not in original_text.lower():
 
         suggestions.append(
-            "Prefer 'shall' instead of 'should' in mandatory requirements."
+            "Use 'shall' instead of 'should' for mandatory requirements."
         )
 
-    if not suggestions:
+    if len(suggestions) == 0:
 
         suggestions.append(
             "Excellent SRS. No major improvements required."
         )
 
-    # -----------------------------
+    # -----------------------------------------
     # Return Result
-    # -----------------------------
+    # -----------------------------------------
 
     return {
 
