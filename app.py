@@ -160,7 +160,10 @@ if uploaded_file is not None:
 
                 # AI Analysis
 
-                analysis_result = analyze_srs(processed_text)
+                analysis_result = analyze_srs(
+    processed_text,
+    srs_text
+)
 
                 # Explainable AI
 
