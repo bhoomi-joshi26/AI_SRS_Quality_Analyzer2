@@ -189,11 +189,13 @@ def requirement_statistics(text):
 
     return {
 
-        "total_requirements": total,
+    "total_requirements": total,
 
-        "functional_requirements": functional,
+    "functional_requirements": functional,
 
-        "non_functional_requirements
+    "non_functional_requirements": non_functional
+
+}
 # ==========================================
 # QUALITY SCORE
 # ==========================================
@@ -359,16 +361,18 @@ def analyze_srs(processed_text, original_text):
 
     return {
 
-        "prediction": prediction,
+    "prediction": prediction,
 
-        "confidence": confidence,
+    "confidence": confidence,
 
-        "quality_score": quality_score,
+    "quality_score": quality_score,
 
-        "message": message,
+    "message": message,
 
-        "ambiguous_words": ambiguity,
+    "ambiguous_words": ambiguity,
 
-        "statistics": statistics,
+    "statistics": statistics,
 
-        "suggestions
+    "suggestions": suggestions
+
+}
