@@ -1,29 +1,23 @@
 import os
-import pandas as pd
 import joblib
+import pandas as pd
 
 from sklearn.model_selection import train_test_split
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from sklearn.svm import LinearSVC
+from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
     confusion_matrix
 )
+# =====================================================
+# PROJECT PATHS
+# =====================================================
 
-
-
-# =====================================
-# PATH CONFIGURATION
-# =====================================
-
-BASE_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DATASET_PATH = os.path.join(
     BASE_DIR,
@@ -32,83 +26,83 @@ DATASET_PATH = os.path.join(
     "srs_dataset.csv"
 )
 
+MODEL_DIR = os.path.join(
+    BASE_DIR,
+    "models"
+)
 
 MODEL_PATH = os.path.join(
-    BASE_DIR,
+    MODEL_DIR,
     "model.pkl"
 )
 
-
 VECTORIZER_PATH = os.path.join(
-    BASE_DIR,
+    MODEL_DIR,
     "vectorizer.pkl"
 )
 
+os.makedirs(MODEL_DIR, exist_ok=True)
 
-
-# =====================================
+# =====================================================
 # LOAD DATASET
-# =====================================
+# =====================================================
 
-print("\nLoading SRS Dataset...")
+df = pd.read_csv(DATASET_PATH)
 
+print("Dataset Loaded Successfully")
 
-data = pd.read_csv(
-    DATASET_PATH
+print("Total Samples :", len(df))
+# =====================================================
+# CLEAN DATASET
+# =====================================================
+
+df = df.dropna()
+
+df = df.drop_duplicates(
+    subset="requirement"
 )
 
-
-print("\nDataset Information")
-print("-------------------")
-
-print(data.head())
-
-print("\nTotal Samples:")
-print(len(data))
-
-
-
-# Remove empty values
-
-data.dropna(
-    inplace=True
+df["requirement"] = (
+    df["requirement"]
+    .astype(str)
+    .str.strip()
 )
 
+print("Samples After Cleaning :", len(df))
 
+# =====================================================
+# INPUT & OUTPUT
+# =====================================================
 
-# Remove duplicates
+X = df["requirement"]
 
-data.drop_duplicates(
-    subset="requirement",
-    inplace=True
+y = df["label"]
+
+# =====================================================
+# TF-IDF
+# =====================================================
+
+vectorizer = TfidfVectorizer(
+
+    lowercase=True,
+
+    stop_words="english",
+
+    ngram_range=(1,2),
+
+    max_features=5000
+
 )
 
-
-
-print(
-    "\nDataset after cleaning:",
-    len(data)
-)
-
-
-
-# =====================================
-# INPUT AND OUTPUT
-# =====================================
-
-X = data["requirement"]
-
-y = data["label"]
-
-
-
-# =====================================
+X_vector = vectorizer.fit_transform(X)
+# =====================================================
 # TRAIN TEST SPLIT
-# =====================================
+# =====================================================
 
 X_train, X_test, y_train, y_test = train_test_split(
 
-    X,
+    X_vector,
+
     y,
 
     test_size=0.20,
@@ -116,94 +110,33 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=42,
 
     stratify=y
+
 )
 
+# =====================================================
+# RANDOM FOREST MODEL
+# =====================================================
 
+model = RandomForestClassifier(
 
-print("\nTraining Samples:")
-print(len(X_train))
+    n_estimators=300,
 
-
-print("Testing Samples:")
-print(len(X_test))
-
-
-
-# =====================================
-# TF-IDF FEATURE EXTRACTION
-# =====================================
-
-print("\nConverting Text into Numerical Features...")
-
-
-vectorizer = TfidfVectorizer(
-    lowercase=True,
-    stop_words="english",
-    max_features=10000,
-    ngram_range=(1,2),
-    sublinear_tf=True,
-    min_df=2,
-    max_df=0.95
-)
-
-
-
-X_train_vector = vectorizer.fit_transform(
-    X_train
-)
-
-
-X_test_vector = vectorizer.transform(
-    X_test
-)
-
-
-
-print(
-    "Feature Count:",
-    len(vectorizer.get_feature_names_out())
-)
-
-
-
-# =====================================
-# MACHINE LEARNING MODEL
-# =====================================
-
-print("\nTraining Random Forest Model...")
-
-
-model = LinearSVC(
-    class_weight="balanced",
     random_state=42
+
 )
-
-
 
 model.fit(
 
-    X_train_vector,
+    X_train,
 
     y_train
 
 )
+# =====================================================
+# MODEL EVALUATION
+# =====================================================
 
-
-
-# =====================================
-# MODEL TESTING
-# =====================================
-
-print("\nTesting Model...")
-
-
-prediction = model.predict(
-
-    X_test_vector
-
-)
-
-
+prediction = model.predict(X_test)
 
 accuracy = accuracy_score(
 
@@ -213,26 +146,11 @@ accuracy = accuracy_score(
 
 )
 
+print("\nAccuracy :")
 
+print(round(accuracy * 100,2), "%")
 
-print("\n============================")
-print("MODEL PERFORMANCE")
-print("============================")
-
-
-print(
-    "Accuracy:",
-    round(
-        accuracy*100,
-        2
-    ),
-    "%"
-)
-
-
-
-print("\nClassification Report:")
-
+print("\nClassification Report")
 
 print(
 
@@ -246,10 +164,7 @@ print(
 
 )
 
-
-
-print("\nConfusion Matrix:")
-
+print("\nConfusion Matrix")
 
 print(
 
@@ -263,12 +178,9 @@ print(
 
 )
 
-
-
-# =====================================
+# =====================================================
 # SAVE MODEL
-# =====================================
-
+# =====================================================
 
 joblib.dump(
 
@@ -278,8 +190,6 @@ joblib.dump(
 
 )
 
-
-
 joblib.dump(
 
     vectorizer,
@@ -288,20 +198,8 @@ joblib.dump(
 
 )
 
+print("\nModel Saved Successfully")
 
+print(MODEL_PATH)
 
-print("\n============================")
-print("TRAINING COMPLETED")
-print("============================")
-
-
-print(
-    "Model Saved:",
-    MODEL_PATH
-)
-
-
-print(
-    "Vectorizer Saved:",
-    VECTORIZER_PATH
-)
+print(VECTORIZER_PATH)
