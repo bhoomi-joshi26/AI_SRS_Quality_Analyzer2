@@ -1,81 +1,59 @@
 import re
 import nltk
-import spacy
+from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-
-# -----------------------------
-# Download required NLTK resources
-# -----------------------------
-resources = {
-    "wordnet": "corpora/wordnet",
-    "omw-1.4": "corpora/omw-1.4"
-}
-
-for resource, path in resources.items():
-    try:
-        nltk.data.find(path)
-    except LookupError:
-        nltk.download(resource, quiet=True)
-
-# -----------------------------
-# Load spaCy model
-# -----------------------------
+from nltk.tokenize import word_tokenize
+# =====================================================
+# DOWNLOAD NLTK DATA
+# =====================================================
 try:
-    nlp = spacy.load("en_core_web_sm")
-except Exception:
-    nlp = spacy.blank("en")
+    nltk.data.find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt")
 
-STOP_WORDS = nlp.Defaults.stop_words
+try:
+    nltk.data.find("corpora/stopwords")
+except LookupError:
+    nltk.download("stopwords")
+
+try:
+    nltk.data.find("corpora/wordnet")
+except LookupError:
+    nltk.download("wordnet")
+
+try:
+    nltk.data.find("corpora/omw-1.4")
+except LookupError:
+    nltk.download("omw-1.4")
+
 lemmatizer = WordNetLemmatizer()
-
-
-# -----------------------------
-# Clean text
-# -----------------------------
-def clean_text(text):
-    text = text.lower()
-    text = re.sub(r"[^a-zA-Z\s]", " ", text)
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
-
-
-# -----------------------------
-# Tokenize text
-# -----------------------------
-def tokenize_text(text):
-    return [token.text for token in nlp(text) if not token.is_space]
-
-
-# -----------------------------
-# Remove stopwords
-# -----------------------------
-def remove_stopwords(tokens):
-    return [word for word in tokens if word not in STOP_WORDS]
-
-
-# -----------------------------
-# Lemmatize words
-# -----------------------------
-def lemmatize_words(tokens):
-    lemmatized = []
-    for word in tokens:
-        try:
-            lemmatized.append(lemmatizer.lemmatize(word))
-        except LookupError:
-            lemmatized.append(word)
-    return lemmatized
-
-
-# -----------------------------
-# Complete preprocessing
-# -----------------------------
+stop_words = set(stopwords.words("english"))
+# =====================================================
+# PREPROCESS TEXT
+# =====================================================
 def preprocess_text(text):
-    if not text:
+    if text is None:
         return ""
-
-    text = clean_text(text)
-    tokens = tokenize_text(text)
-    tokens = remove_stopwords(tokens)
-    tokens = lemmatize_words(tokens)
-
-    return " ".join(tokens)
+    # Lowercase
+    text = text.lower()
+    # Remove URLs
+    text = re.sub(r"http\S+", " ", text)
+    # Remove email addresses
+    text = re.sub(r"\S+@\S+", " ", text)
+    # Remove numbers
+    text = re.sub(r"\d+", " ", text)
+    # Remove punctuation
+    text = re.sub(r"[^a-zA-Z\s]", " ", text)
+    # Remove extra spaces
+    text = re.sub(r"\s+", " ", text).strip()
+        # Tokenization
+    words = word_tokenize(text)
+    processed_words = []
+    for word in words:
+        if word in stop_words:
+            continue
+        if len(word) <= 2:
+            continue
+        word = lemmatizer.lemmatize(word)
+        processed_words.append(word)
+    return " ".join(processed_words)
