@@ -1,10 +1,9 @@
 import os
 import re
 import joblib
-import numpy as np
 
 # =====================================
-# MODEL PATH
+# LOAD MODEL
 # =====================================
 
 BASE_DIR = os.path.dirname(
@@ -25,306 +24,155 @@ VECTORIZER_PATH = os.path.join(
     "vectorizer.pkl"
 )
 
-# =====================================
-# LOAD MODEL
-# =====================================
-
-model = None
-vectorizer = None
-
-try:
-
-    model = joblib.load(MODEL_PATH)
-    vectorizer = joblib.load(VECTORIZER_PATH)
-
-except Exception as e:
-
-    print("Explain AI Model Loading Error :", e)
+model = joblib.load(MODEL_PATH)
+vectorizer = joblib.load(VECTORIZER_PATH)
 
 # =====================================
-# AMBIGUOUS WORDS
+# KEYWORD LISTS
 # =====================================
 
-AMBIGUOUS_WORDS = [
+POSITIVE_KEYWORDS = [
 
-    "fast",
-    "quick",
-    "easy",
-    "simple",
-    "good",
-    "better",
-    "efficient",
-    "proper",
-    "user friendly",
-    "friendly",
-    "modern",
-    "advanced",
-    "robust",
-    "flexible",
-    "powerful",
-    "acceptable",
-    "adequate",
-    "optimal",
-    "best",
-    "many",
-    "large",
-    "high",
-    "low",
-    "soon"
+    "shall",
+    "authentication",
+    "security",
+    "encryption",
+    "aes",
+    "otp",
+    "password",
+    "role",
+    "access control",
+    "performance",
+    "response time",
+    "reliability",
+    "availability",
+    "store",
+    "process",
+    "generate",
+    "upload",
+    "download",
+    "login",
+    "logout",
+    "database"
 
 ]
 
+NEGATIVE_KEYWORDS = [
+
+    "fast",
+    "easy",
+    "good",
+    "better",
+    "simple",
+    "efficient",
+    "proper",
+    "advanced",
+    "many",
+    "large",
+    "soon",
+    "etc",
+    "appropriate",
+    "sufficient"
+
+]
 # =====================================
-# DETECT AMBIGUITY
+# FIND POSITIVE INDICATORS
 # =====================================
 
-def detect_ambiguity(text):
+def get_positive_features(text):
 
     text = text.lower()
 
-    found = []
+    positive = []
 
-    for word in AMBIGUOUS_WORDS:
+    for word in POSITIVE_KEYWORDS:
 
-        pattern = r"\b" + re.escape(word) + r"\b"
+        if re.search(r"\b" + re.escape(word) + r"\b", text):
 
-        if re.search(pattern, text):
+            positive.append(word)
 
-            found.append(word)
+    return sorted(list(set(positive)))
 
-    return sorted(list(set(found)))
+
 # =====================================
-# POSITIVE & NEGATIVE FEATURE ANALYSIS
+# FIND NEGATIVE INDICATORS
 # =====================================
 
-def analyze_features(text):
+def get_negative_features(text):
 
     text = text.lower()
 
-    positive_features = []
-    negative_features = []
+    negative = []
 
-    # ---------------------------------
-    # Positive Indicators
-    # ---------------------------------
+    for word in NEGATIVE_KEYWORDS:
 
-    if "shall" in text:
-        positive_features.append(
-            "Uses mandatory keyword 'shall'"
-        )
+        if re.search(r"\b" + re.escape(word) + r"\b", text):
 
-    if re.search(r"\d+\s*(second|seconds|minute|minutes|ms|%)", text):
-        positive_features.append(
-            "Contains measurable performance requirement"
-        )
+            negative.append(word)
 
-    security_keywords = [
-
-        "authentication",
-        "authorization",
-        "password",
-        "otp",
-        "aes",
-        "encryption",
-        "encrypted",
-        "secure",
-        "access control",
-        "role based"
-
-    ]
-
-    if any(word in text for word in security_keywords):
-
-        positive_features.append(
-            "Contains security requirement"
-        )
-
-    actors = [
-
-        "user",
-        "customer",
-        "administrator",
-        "employee",
-        "registered user",
-        "system operator"
-
-    ]
-
-    if any(actor in text for actor in actors):
-
-        positive_features.append(
-            "Clearly identifies system actor"
-        )
-
-    actions = [
-
-        "login",
-        "log in",
-        "upload",
-        "download",
-        "search",
-        "generate",
-        "process",
-        "update",
-        "delete",
-        "store",
-        "manage",
-        "track",
-        "create"
-
-    ]
-
-    if any(action in text for action in actions):
-
-        positive_features.append(
-            "Clearly specifies system action"
-        )
-
-    # ---------------------------------
-    # Negative Indicators
-    # ---------------------------------
-
-    ambiguous = detect_ambiguity(text)
-
-    for word in ambiguous:
-
-        negative_features.append(
-            f"Contains ambiguous word: '{word}'"
-        )
-
-    if "should" in text and "shall" not in text:
-
-        negative_features.append(
-            "Uses 'should' instead of 'shall'"
-        )
-
-    if not re.search(
-        r"\d+\s*(second|seconds|minute|minutes|ms|%)",
-        text
-    ):
-
-        negative_features.append(
-            "Requirement is not measurable"
-        )
-
-    return positive_features, negative_features
+    return sorted(list(set(negative)))
 # =====================================
 # EXPLAIN PREDICTION
 # =====================================
 
 def explain_prediction(text):
 
-    if model is None or vectorizer is None:
-
-        return {
-
-            "prediction": "Unknown",
-
-            "confidence": 0,
-
-            "important_keywords": [],
-
-            "positive_features": [],
-
-            "negative_features": [
-
-                "Model not loaded"
-
-            ],
-
-            "explanation": "Explainable AI model is unavailable."
-
-        }
-
-    # ---------------------------------
-    # TF-IDF Vector
-    # ---------------------------------
+    # ML Prediction
 
     vector = vectorizer.transform([text])
 
     prediction = model.predict(vector)[0]
 
-    # ---------------------------------
-    # Confidence
-    # ---------------------------------
+    probability = model.predict_proba(vector)[0]
 
-    if hasattr(model, "predict_proba"):
+    confidence = round(max(probability) * 100, 2)
 
-        probability = model.predict_proba(vector)[0]
+    # Detect Indicators
 
-        confidence = round(max(probability) * 100, 2)
+    positive_features = get_positive_features(text)
 
-    else:
+    negative_features = get_negative_features(text)
 
-        confidence = 85.0
-
-    # ---------------------------------
-    # Important Keywords
-    # ---------------------------------
-
-    feature_names = np.array(
-        vectorizer.get_feature_names_out()
-    )
-
-    values = vector.toarray()[0]
-
-    indices = np.argsort(values)[::-1]
-
-    important_keywords = []
-
-    for index in indices:
-
-        if values[index] > 0:
-
-            important_keywords.append(
-                feature_names[index]
-            )
-
-        if len(important_keywords) == 10:
-
-            break
-
-    # ---------------------------------
-    # Dynamic Feature Analysis
-    # ---------------------------------
-
-    positive_features, negative_features = analyze_features(text)
-
-    # ---------------------------------
-    # Dynamic Explanation
-    # ---------------------------------
+    # Explanation Message
 
     if prediction == "High":
 
         explanation = (
-
-            "The requirement is classified as HIGH quality "
-
-            "because it contains clear, measurable "
-
-            "and well-structured statements."
-
+            "The SRS is classified as High Quality because it contains "
+            "clear, measurable and well-structured requirement statements."
         )
 
     else:
 
         explanation = (
-
-            "The requirement is classified as LOW quality "
-
-            "because it contains ambiguity or lacks "
-
-            "clear measurable information."
-
+            "The SRS is classified as Low Quality because it contains "
+            "ambiguous, incomplete or non-measurable requirements."
         )
+    # ---------------------------------
+    # Default Messages
+    # ---------------------------------
+
+    if len(positive_features) == 0:
+
+        positive_features.append(
+            "No strong SRS quality indicators found."
+        )
+
+    if len(negative_features) == 0:
+
+        negative_features.append(
+            "No ambiguous words detected."
+        )
+
+    # ---------------------------------
+    # Return Result
+    # ---------------------------------
 
     return {
 
         "prediction": prediction,
 
         "confidence": confidence,
-
-        "important_keywords": important_keywords,
 
         "positive_features": positive_features,
 
