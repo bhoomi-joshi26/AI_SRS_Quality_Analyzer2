@@ -1,156 +1,130 @@
 import os
 
-from PyPDF2 import PdfReader
+import re
+
+import PyPDF2
 
 from docx import Document
+# =====================================================
+# CLEAN TEXT
+# =====================================================
+
+def clean_text(text):
+
+    if text is None:
+
+        return ""
+
+    # Remove multiple spaces
+
+    text = re.sub(r"[ \t]+", " ", text)
+
+    # Remove multiple blank lines
+
+    text = re.sub(r"\n\s*\n+", "\n", text)
+
+    return text.strip()
+    # =====================================================
+# READ PDF
+# =====================================================
+
+def read_pdf(file_path):
+
+    text = ""
+
+    try:
+
+        with open(file_path, "rb") as pdf_file:
+
+            reader = PyPDF2.PdfReader(pdf_file)
+
+            for page in reader.pages:
+
+                page_text = page.extract_text()
+
+                if page_text:
+
+                    text += page_text + "\n"
+
+    except Exception as e:
+
+        print("PDF Read Error :", e)
+
+    return clean_text(text)
 
 
+# =====================================================
+# READ DOCX
+# =====================================================
 
-# =========================================
-# READ TEXT FILE
-# =========================================
+def read_docx(file_path):
+
+    text = ""
+
+    try:
+
+        document = Document(file_path)
+
+        for paragraph in document.paragraphs:
+
+            text += paragraph.text + "\n"
+
+    except Exception as e:
+
+        print("DOCX Read Error :", e)
+
+    return clean_text(text)
+    # =====================================================
+# READ TXT
+# =====================================================
 
 def read_txt(file_path):
 
     try:
 
         with open(
+
             file_path,
+
             "r",
-            encoding="utf-8"
+
+            encoding="utf-8",
+
+            errors="ignore"
+
         ) as file:
 
-            text = file.read()
-
-
-        return text
-
+            return clean_text(file.read())
 
     except Exception as e:
 
-        return f"Error reading TXT file: {e}"
+        print("TXT Read Error :", e)
+
+        return ""
 
 
-
-
-# =========================================
-# READ PDF FILE
-# =========================================
-
-def read_pdf(file_path):
-
-    try:
-
-        reader = PdfReader(
-            file_path
-        )
-
-
-        text = ""
-
-
-        for page in reader.pages:
-
-            page_text = page.extract_text()
-
-
-            if page_text:
-
-                text += page_text + "\n"
-
-
-
-        return text
-
-
-
-    except Exception as e:
-
-        return f"Error reading PDF file: {e}"
-
-
-
-
-# =========================================
-# READ DOCX FILE
-# =========================================
-
-def read_docx(file_path):
-
-    try:
-
-        document = Document(
-            file_path
-        )
-
-
-        text = ""
-
-
-        for paragraph in document.paragraphs:
-
-            text += paragraph.text + "\n"
-
-
-
-        return text
-
-
-
-    except Exception as e:
-
-        return f"Error reading DOCX file: {e}"
-
-
-
-
-
-# =========================================
-# MAIN DOCUMENT READER FUNCTION
-# =========================================
+# =====================================================
+# MAIN DOCUMENT READER
+# =====================================================
 
 def read_document(file_path):
 
+    extension = os.path.splitext(file_path)[1].lower()
 
-    if not os.path.exists(file_path):
+    if extension == ".pdf":
 
-        return "File does not exist"
-
-
-
-    extension = os.path.splitext(
-        file_path
-    )[1].lower()
-
-
-
-    if extension == ".txt":
-
-        return read_txt(
-            file_path
-        )
-
-
-
-    elif extension == ".pdf":
-
-        return read_pdf(
-            file_path
-        )
-
-
+        return read_pdf(file_path)
 
     elif extension == ".docx":
 
-        return read_docx(
-            file_path
-        )
+        return read_docx(file_path)
 
+    elif extension == ".txt":
 
+        return read_txt(file_path)
 
     else:
 
-        return (
-            "Unsupported file format. "
-            "Please upload TXT, PDF or DOCX file."
-        )
+        print("Unsupported file format.")
+
+        return ""
