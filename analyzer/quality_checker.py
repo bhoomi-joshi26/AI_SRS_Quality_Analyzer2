@@ -1,36 +1,29 @@
 import os
 import re
 import joblib
-
 # ==========================================
 # PROJECT PATHS
 # ==========================================
-
 BASE_DIR = os.path.dirname(
     os.path.dirname(
         os.path.abspath(__file__)
     )
 )
-
 MODEL_PATH = os.path.join(
     BASE_DIR,
     "models",
     "model.pkl"
 )
-
 VECTORIZER_PATH = os.path.join(
     BASE_DIR,
     "models",
     "vectorizer.pkl"
 )
-
 # ==========================================
 # LOAD MODEL
 # ==========================================
-
 model = None
 vectorizer = None
-
 try:
 
     model = joblib.load(MODEL_PATH)
@@ -50,69 +43,115 @@ except Exception as e:
 AMBIGUOUS_WORDS = [
 
     "fast",
+
     "quick",
+
     "easy",
+
     "simple",
-    "better",
+
     "good",
+
+    "better",
+
     "efficient",
+
     "proper",
-    "user friendly",
-    "soon",
+
     "many",
+
     "large",
-    "high",
-    "low",
+
+    "soon",
+
     "etc",
+
     "appropriate",
+
     "sufficient",
-    "minimal",
-    "maximum",
-    "optimum"
+
+    "user friendly"
 
 ]
 
 FUNCTIONAL_KEYWORDS = [
 
     "shall",
+
     "allow",
-    "provide",
-    "generate",
-    "store",
-    "update",
-    "delete",
-    "insert",
-    "create",
+
     "login",
+
     "logout",
-    "authenticate",
+
+    "register",
+
     "search",
+
     "upload",
+
     "download",
+
+    "create",
+
+    "delete",
+
+    "update",
+
+    "store",
+
     "process",
+
     "track",
-    "manage"
+
+    "generate",
+
+    "manage",
+
+    "view",
+
+    "edit"
 
 ]
 
 NON_FUNCTIONAL_KEYWORDS = [
 
-    "performance",
     "security",
-    "availability",
-    "reliability",
+
+    "performance",
+
     "response time",
+
+    "availability",
+
+    "reliability",
+
+    "scalability",
+
+    "usability",
+
+    "maintainability",
+
     "latency",
-    "encryption",
+
     "aes",
+
+    "encryption",
+
     "otp",
-    "authentication",
+
     "password",
+
+    "authentication",
+
     "access control",
-    "role based",
-    "multi factor"
+
+    "backup",
+
+    "recovery"
 
 ]
+
 # ==========================================
 # AMBIGUITY DETECTION
 # ==========================================
@@ -138,28 +177,22 @@ def detect_ambiguity(text):
 
 def extract_requirements(text):
 
-    # Remove extra blank lines
-
-    text = re.sub(r"\n\s*\n", "\n", text)
-
-    # Split using new line or sentence ending
-
-    parts = re.split(r"\n|(?<=[.!?])\s+", text)
+    text = text.replace("\r", "\n")
 
     requirements = []
 
-    for part in parts:
+    lines = text.split("\n")
 
-        part = part.strip()
+    for line in lines:
 
-        if len(part) < 15:
+        line = line.strip()
 
+        if len(line) < 10:
             continue
 
-        requirements.append(part)
+        requirements.append(line)
 
     return requirements
-
 
 # ==========================================
 # REQUIREMENT STATISTICS
@@ -179,11 +212,13 @@ def requirement_statistics(text):
 
         req_lower = req.lower()
 
-        if any(word in req_lower for word in FUNCTIONAL_KEYWORDS):
+        if any(re.search(r"\b" + re.escape(word) + r"\b", req_lower)
+       for word in FUNCTIONAL_KEYWORDS):
 
             functional += 1
 
-        if any(word in req_lower for word in NON_FUNCTIONAL_KEYWORDS):
+        if any(re.search(r"\b" + re.escape(word) + r"\b", req_lower)
+       for word in NON_FUNCTIONAL_KEYWORDS):
 
             non_functional += 1
 
