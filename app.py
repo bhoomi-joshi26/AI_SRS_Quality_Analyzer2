@@ -22,28 +22,46 @@ st.sidebar.markdown("""
 ## Intelligent SRS Quality Analyzer
 ### Features
 ✅ SRS Document Analysis
+
 ✅ NLP Preprocessing
+
 ✅ Machine Learning Prediction
+
 ✅ Requirement Statistics
+
 ✅ Functional Requirement Detection
+
 ✅ Non-Functional Requirement Detection
+
 ✅ Ambiguity Detection
+
 ✅ Explainable AI
+
 ✅ Quality Score
+
 ✅ PDF Report
 ---
 ### Technologies Used
 🐍 Python
+
 🧠 Scikit-Learn
-📝 NLTK + TF-IDF
+
+📝 NLP (NLTK + TF-IDF)
+
 🌐 Streamlit
+
 📄 PyPDF2
+
 📑 python-docx
+
 📋 ReportLab
 ---
 ### Developed By
+
 **Bhoomi Joshi (24CA1054)**
+
 **Jhanvi Pangam (24CA1053)**
+
 **Aaiman Khan (24CA1061)**
 """)
 # ======================================================
@@ -417,14 +435,6 @@ st.markdown(
     <p>
     Intelligent SRS Quality Analyzer Using NLP and Explainable AI
     </p>
-
-    <p>
-    Developed By
-    </p>
-
-    <b>Bhoomi Joshi (24CA1054)</b><br>
-    <b>Jhanvi Pangam (24CA1053)</b><br>
-    <b>Aaiman Khan (24CA1061)</b>
 
     <br><br>
 
