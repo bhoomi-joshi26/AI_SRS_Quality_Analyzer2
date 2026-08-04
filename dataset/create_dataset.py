@@ -1,201 +1,76 @@
-import pandas as pd
 import random
+from pathlib import Path
+import pandas as pd
 
-# -----------------------------------
-# Lists for generating requirements
-# -----------------------------------
+random.seed(42)
 
-users = [
-    "customers",
-    "administrators",
-    "employees",
-    "registered users",
-    "system operators"
+out_dir = Path("dataset")
+out_dir.mkdir(parents=True, exist_ok=True)
+
+high_quality = [
+    "The user shall log in using a username and password.",
+    "The application shall encrypt all user passwords before storage.",
+    "The system shall generate monthly sales reports in PDF format.",
+    "The interface shall display an error message when login fails.",
+    "The system shall allow an administrator to reset a user password.",
+    "The application shall log each successful login with a timestamp.",
+    "The system shall validate that the email address is in a correct format.",
+    "The system shall save user profile changes within 5 seconds.",
+    "The application shall allow users to upload files up to 20 MB.",
+    "The system shall send a password reset link to the registered email address.",
+    "The system shall support concurrent access by at least 100 users.",
+    "The application shall store audit logs for 12 months.",
+    "The interface shall provide a search field on the dashboard page.",
+    "The system shall calculate the total order amount before checkout.",
+    "The application shall require two-factor authentication for admin access.",
+    "The system shall prevent access to disabled user accounts.",
+    "The application shall generate a confirmation email after registration.",
+    "The system shall display order history for the last 6 months.",
+    "The system shall complete a database backup every night at 2:00 AM.",
+    "The application shall export user data to a CSV file."
 ]
 
-actions = [
-    "login into the system",
-    "upload documents",
-    "manage user accounts",
-    "generate reports",
-    "process transactions",
-    "update profile information",
-    "search records",
-    "track activities"
+low_quality = [
+    "The system should be fast.",
+    "The interface should be user-friendly.",
+    "The software should work properly.",
+    "The application should be secure.",
+    "The system should respond quickly.",
+    "The product should be easy to use.",
+    "The application should have a nice design.",
+    "The system should perform well under heavy load.",
+    "The software should be reliable.",
+    "The interface should look modern.",
+    "The application should not crash.",
+    "The system should support many users.",
+    "The software should be efficient.",
+    "The system should be scalable.",
+    "The application should be intuitive.",
+    "The interface should be simple.",
+    "The system should be stable.",
+    "The software should be easy to maintain.",
+    "The application should be compatible with browsers.",
+    "The system should have good performance."
 ]
 
-methods = [
-    "secure authentication",
-    "OTP verification",
-    "password validation",
-    "role based access control",
-    "multi factor authentication"
-]
+rows = []
 
-features = [
-    "notification",
-    "backup",
-    "search",
-    "authentication",
-    "monitoring",
-    "report generation",
-    "data management"
-]
+for _ in range(3000):
+    rows.append({
+        "requirement": random.choice(high_quality),
+        "label": 1
+    })
 
-security = [
-    "AES encryption",
-    "secure database storage",
-    "access control mechanism",
-    "encrypted communication"
-]
+for _ in range(3000):
+    rows.append({
+        "requirement": random.choice(low_quality),
+        "label": 0
+    })
 
-data_types = [
-    "customer information",
-    "transaction details",
-    "employee records",
-    "system logs",
-    "user credentials"
-]
+random.shuffle(rows)
 
-time_values = [
-    2,
-    3,
-    5,
-    8,
-    10
-]
-
-
-# -----------------------------------
-# High Quality Requirements
-# -----------------------------------
-
-high_quality = []
-
-counter = 1
-
-
-for i in range(500):
-
-    sentence = (
-        f"The system shall allow {random.choice(users)} "
-        f"to {random.choice(actions)} "
-        f"using {random.choice(methods)}. "
-        f"The system shall process requests within "
-        f"{random.choice(time_values)} seconds "
-        f"and store {random.choice(data_types)} "
-        f"using {random.choice(security)}."
-    )
-
-
-    sentence += f" Requirement Number {counter}"
-
-    high_quality.append(
-        [
-            sentence,
-            "High"
-        ]
-    )
-
-    counter += 1
-
-
-
-# -----------------------------------
-# Low Quality Requirements
-# -----------------------------------
-
-low_words = [
-    "fast",
-    "better",
-    "simple",
-    "easy",
-    "good",
-    "efficient",
-    "proper",
-    "advanced"
-]
-
-
-low_quality = []
-
-
-for i in range(2000):
-
-    sentence = (
-        f"The system should be {random.choice(low_words)} "
-        f"and should provide good performance. "
-        f"The application should work properly "
-        f"according to user needs."
-    )
-
-
-    sentence += f" Requirement Number {counter}"
-
-
-    low_quality.append(
-        [
-            sentence,
-            "Low"
-        ]
-    )
-
-    counter += 1
-
-
-
-# -----------------------------------
-# Combine Dataset
-# -----------------------------------
-
-dataset = high_quality + low_quality
-
-
-random.shuffle(dataset)
-
-
-
-df = pd.DataFrame(
-    dataset,
-    columns=[
-        "requirement",
-        "label"
-    ]
-)
-
-
-
-# -----------------------------------
-# Remove duplicates
-# -----------------------------------
-
-df.drop_duplicates(
-    subset="requirement",
-    inplace=True
-)
-
-
-
-# -----------------------------------
-# Save Dataset
-# -----------------------------------
-
-df.to_csv(
-    "srs_dataset.csv",
-    index=False
-)
-
-
-
-print(
-    "Dataset Created Successfully!"
-)
-
-
-print(
-    "Total Samples:",
-    len(df)
-)
-
-
-print(df.head())
+df = pd.DataFrame(rows, columns=["requirement", "label"])
+df.to_csv(out_dir / "srs_dataset.csv", index=False, encoding="utf-8")
+print("Saved:", out_dir / "srs_dataset.csv")
+print("Rows:", len(df))
+print(df["label"].value_counts().to_dict())
