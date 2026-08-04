@@ -1,7 +1,6 @@
 import random
 from pathlib import Path
 import pandas as pd
-
 random.seed(42)
 
 out_dir = Path("dataset")
